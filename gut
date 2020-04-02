@@ -1,0 +1,108 @@
+#!/bin/bash
+
+GUT_TEMP_DIR="${HOME}/.gut_temp_dir"
+
+help_command() {
+    echo "Gut - A VCS with gut feeling."
+    echo "Commands:"
+    echo "  checkout [id] -- Checkout worktree to 'id' commit."
+    echo "  commit [id]   -- Commit your changes."
+    echo "  help          -- Prints this message."
+    echo "  init          -- Initialises the current directory as a gut repository."
+    echo "  log           -- View log of commits of the repository."
+    echo "Built with a lot of ♥️ by SDSLabs."
+}
+
+if [ "$#" -lt 1 ]
+then
+	echo "[-] Invalid number of arguments."
+	help_command
+	exit 1
+fi
+
+if [ "$1" != "checkout" -a "$1" != "commit" -a "$1" != "help" -a "$1" != "init" -a "$1" != "log" ]
+then
+    echo "[-] Invalid command - ${1}"
+    help_command
+    exit 1
+fi
+
+if [ "$1" = "checkout" ] || [ "$1" = "commit" ]
+then
+    if [ "$#" -lt 2 ]
+    then
+        echo "[-] Invalid number of arguments."
+        help_command
+        exit 1
+    fi
+fi
+
+if [ "$1" = "log" ]
+then
+    log=$(ls -A .gut)
+    arr=($(echo $log | tr ' ' '\n'))
+    for i in "${arr[@]}"
+    do
+        echo $i
+    done
+    exit 0
+fi
+
+if [ "$1" = "help" ]
+then
+    help_command
+    exit 0
+fi
+
+if [ "$1" = "init" ]
+then
+    echo "[*] Initializing an empty gut repository..."
+    test -d ".gut" || mkdir ".gut"
+    echo "[+] Done!"
+    exit 0
+fi
+
+if [ "$1" = "commit" ]
+then
+    echo "[*] Committing changes..."
+    test -d ".gut/${2}"
+    if [ "$?" -eq 0 ]
+    then
+        echo "[-] Commit with ID - ${2} - already exists"
+        exit 1
+    fi
+    this_dir=$(pwd)
+    test -d $GUT_TEMP_DIR && rm -r $GUT_TEMP_DIR
+    cp -r $this_dir $GUT_TEMP_DIR
+    cp -r $GUT_TEMP_DIR ".gut/${2}"
+    rm -r $GUT_TEMP_DIR
+    echo "[+] Committed with ID - ${2}!"
+    exit 0
+fi
+
+if [ "$1" = "checkout" ]
+then
+    echo "[*] Checking-out to ${2} commit..."
+    test -d ".gut/${2}"
+    if [ "$?" -ne 0 ]
+    then
+        echo "[-] Couldn't find commit with ID - ${2}."
+        exit 1
+    fi
+    rmf=$(ls -A | grep -v '.gut')
+    if [ "$rmf" != "" ]
+    then
+        rm -r $(ls -A | grep -v '.gut')
+    fi
+    files=$(ls -A ".gut/${2}" | grep -v '.gut')
+    arr=($(echo $files | tr '\n' '\n'))
+    for i in "${arr[@]}"
+    do
+        cp -r ".gut/${2}/${i}" $(pwd)
+    done
+    echo "[+] Checked-out to commit - ${2}!"
+    exit 0
+fi
+
+help_command
+exit 1
